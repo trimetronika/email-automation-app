@@ -1,14 +1,15 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { UserButton } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
   Users, 
   FileText, 
   Send,
-  Mail
+  Mail,
+  User
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface LayoutProps {
   children: ReactNode;
@@ -65,7 +66,10 @@ export default function Layout({ children }: LayoutProps) {
         {/* Top bar */}
         <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
           <div className="flex-1" />
-          <UserButton afterSignOutUrl="/" />
+          <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+            <User className="h-4 w-4" />
+            <span>Profile</span>
+          </Button>
         </div>
 
         {/* Page content */}

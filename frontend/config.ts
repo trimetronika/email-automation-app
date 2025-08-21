@@ -1,3 +1,3 @@
 // The Clerk publishable key, to initialize Clerk.
-// TODO: Set this to your Clerk publishable key, which can be found in the Clerk dashboard.
-export const clerkPublishableKey = "";
+// For development, using a placeholder key. In production, set this to your actual Clerk publishable key.
+export const clerkPublishableKey = "pk_test_placeholder_key_for_development";
