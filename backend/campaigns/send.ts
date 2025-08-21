@@ -1,14 +1,7 @@
 import { api, APIError } from "encore.dev/api";
-import { getAuthData } from "~encore/auth";
 import { campaignsDB } from "./db";
 import { templatesDB } from "../templates/db";
 import { contactsDB } from "../contacts/db";
-import { secret } from "encore.dev/config";
-
-const smtpHost = secret("SMTPHost");
-const smtpPort = secret("SMTPPort");
-const smtpUser = secret("SMTPUser");
-const smtpPassword = secret("SMTPPassword");
 
 export interface SendCampaignRequest {
   campaignId: number;
@@ -21,9 +14,10 @@ export interface SendCampaignResponse {
 
 // Sends an email campaign immediately.
 export const send = api<SendCampaignRequest, SendCampaignResponse>(
-  { auth: true, expose: true, method: "POST", path: "/campaigns/:campaignId/send" },
+  { auth: false, expose: true, method: "POST", path: "/campaigns/:campaignId/send" },
   async (req) => {
-    const auth = getAuthData()!;
+    // For development, use a default user ID
+    const userId = "dev-user-1";
 
     // Check rate limit
     const currentHour = new Date();
@@ -31,7 +25,7 @@ export const send = api<SendCampaignRequest, SendCampaignResponse>(
 
     const rateLimit = await campaignsDB.queryRow<{ email_count: number }>`
       SELECT email_count FROM email_rate_limits 
-      WHERE user_id = ${auth.userID} AND hour_bucket = ${currentHour}
+      WHERE user_id = ${userId} AND hour_bucket = ${currentHour}
     `;
 
     const currentCount = rateLimit?.email_count || 0;
@@ -43,7 +37,7 @@ export const send = api<SendCampaignRequest, SendCampaignResponse>(
     const campaign = await campaignsDB.queryRow`
       SELECT id, template_id, status, total_recipients 
       FROM campaigns 
-      WHERE id = ${req.campaignId} AND user_id = ${auth.userID}
+      WHERE id = ${req.campaignId} AND user_id = ${userId}
     `;
 
     if (!campaign) {
@@ -139,7 +133,7 @@ export const send = api<SendCampaignRequest, SendCampaignResponse>(
     // Update rate limit
     await campaignsDB.exec`
       INSERT INTO email_rate_limits (user_id, hour_bucket, email_count)
-      VALUES (${auth.userID}, ${currentHour}, ${currentCount + sentCount})
+      VALUES (${userId}, ${currentHour}, ${currentCount + sentCount})
       ON CONFLICT (user_id, hour_bucket)
       DO UPDATE SET email_count = email_rate_limits.email_count + ${sentCount}
     `;

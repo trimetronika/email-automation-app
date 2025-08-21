@@ -26,9 +26,10 @@ export interface Contact {
 
 // Creates a new contact.
 export const create = api<CreateContactRequest, Contact>(
-  { auth: true, expose: true, method: "POST", path: "/contacts" },
+  { auth: false, expose: true, method: "POST", path: "/contacts" },
   async (req) => {
-    const auth = getAuthData()!;
+    // For development, use a default user ID
+    const userId = "dev-user-1";
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,7 +40,7 @@ export const create = api<CreateContactRequest, Contact>(
     // Check for duplicate email for this user
     const existing = await contactsDB.queryRow`
       SELECT id FROM contacts 
-      WHERE email = ${req.email} AND user_id = ${auth.userID}
+      WHERE email = ${req.email} AND user_id = ${userId}
     `;
     
     if (existing) {
@@ -48,7 +49,7 @@ export const create = api<CreateContactRequest, Contact>(
 
     const contact = await contactsDB.queryRow<Contact>`
       INSERT INTO contacts (name, email, company, sector, phone, notes, user_id)
-      VALUES (${req.name}, ${req.email}, ${req.company}, ${req.sector}, ${req.phone}, ${req.notes}, ${auth.userID})
+      VALUES (${req.name}, ${req.email}, ${req.company || null}, ${req.sector || null}, ${req.phone || null}, ${req.notes || null}, ${userId})
       RETURNING id, name, email, company, sector, phone, notes, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
     `;
 

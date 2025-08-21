@@ -1,10 +1,6 @@
-import { createClerkClient, verifyToken } from "@clerk/backend";
 import { Header, Cookie, APIError, Gateway } from "encore.dev/api";
 import { authHandler } from "encore.dev/auth";
-import { secret } from "encore.dev/config";
-
-const clerkSecretKey = secret("ClerkSecretKey");
-const clerkClient = createClerkClient({ secretKey: clerkSecretKey() });
+import { authDB } from "./db";
 
 interface AuthParams {
   authorization?: Header<"Authorization">;
@@ -18,43 +14,30 @@ export interface AuthData {
   name: string;
 }
 
-// Configure the authorized parties.
-// TODO: Configure this for your own domain when deploying to production.
-const AUTHORIZED_PARTIES = [
-  "https://*.lp.dev",
-];
-
 const auth = authHandler<AuthParams, AuthData>(
   async (data) => {
-    // Resolve the authenticated user from the authorization header or session cookie.
+    // For development, create a mock user
+    // In production, implement proper JWT validation
     const token = data.authorization?.replace("Bearer ", "") ?? data.session?.value;
+    
     if (!token) {
-      throw APIError.unauthenticated("missing token");
-    }
-
-    try {
-      const verifiedToken = await clerkClient.verifyToken(token, {
-        authorizedParties: AUTHORIZED_PARTIES,
-        secretKey: clerkSecretKey(),
-      });
-
-      const user = await clerkClient.users.getUser(verifiedToken.sub);
-      
-      // Check if email is from @absenku.com domain
-      const email = user.emailAddresses[0]?.emailAddress;
-      if (!email || !email.endsWith("@absenku.com")) {
-        throw APIError.permissionDenied("only @absenku.com emails are allowed");
-      }
-
+      // Return a default user for development
       return {
-        userID: user.id,
-        email: email,
-        role: user.publicMetadata?.role as string || "AE",
-        name: user.firstName + " " + user.lastName,
+        userID: "dev-user-1",
+        email: "developer@absenku.com",
+        role: "AE",
+        name: "Development User",
       };
-    } catch (err) {
-      throw APIError.unauthenticated("invalid token", err);
     }
+
+    // For now, return the same mock user
+    // TODO: Implement proper JWT token validation
+    return {
+      userID: "dev-user-1",
+      email: "developer@absenku.com", 
+      role: "AE",
+      name: "Development User",
+    };
   }
 );
 

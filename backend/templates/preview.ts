@@ -1,5 +1,4 @@
 import { api } from "encore.dev/api";
-import { getAuthData } from "~encore/auth";
 
 export interface PreviewTemplateRequest {
   subject: string;
@@ -14,10 +13,8 @@ export interface PreviewTemplateResponse {
 
 // Previews an email template with variable substitution.
 export const preview = api<PreviewTemplateRequest, PreviewTemplateResponse>(
-  { auth: true, expose: true, method: "POST", path: "/templates/preview" },
+  { auth: false, expose: true, method: "POST", path: "/templates/preview" },
   async (req) => {
-    const auth = getAuthData()!;
-
     let processedSubject = req.subject;
     let processedHtml = req.htmlContent;
 

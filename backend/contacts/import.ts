@@ -1,5 +1,4 @@
 import { api, APIError } from "encore.dev/api";
-import { getAuthData } from "~encore/auth";
 import { contactsDB } from "./db";
 
 export interface ImportContactsRequest {
@@ -21,9 +20,10 @@ export interface ImportContactsResponse {
 
 // Imports multiple contacts from CSV data.
 export const importContacts = api<ImportContactsRequest, ImportContactsResponse>(
-  { auth: true, expose: true, method: "POST", path: "/contacts/import" },
+  { auth: false, expose: true, method: "POST", path: "/contacts/import" },
   async (req) => {
-    const auth = getAuthData()!;
+    // For development, use a default user ID
+    const userId = "dev-user-1";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     let imported = 0;
@@ -42,7 +42,7 @@ export const importContacts = api<ImportContactsRequest, ImportContactsResponse>
         // Check for duplicate
         const existing = await contactsDB.queryRow`
           SELECT id FROM contacts 
-          WHERE email = ${contact.email} AND user_id = ${auth.userID}
+          WHERE email = ${contact.email} AND user_id = ${userId}
         `;
 
         if (existing) {
@@ -53,7 +53,7 @@ export const importContacts = api<ImportContactsRequest, ImportContactsResponse>
         // Insert contact
         await contactsDB.exec`
           INSERT INTO contacts (name, email, company, sector, phone, notes, user_id)
-          VALUES (${contact.name}, ${contact.email}, ${contact.company}, ${contact.sector}, ${contact.phone}, ${contact.notes}, ${auth.userID})
+          VALUES (${contact.name}, ${contact.email}, ${contact.company || null}, ${contact.sector || null}, ${contact.phone || null}, ${contact.notes || null}, ${userId})
         `;
 
         imported++;

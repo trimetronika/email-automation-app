@@ -1,5 +1,4 @@
 import { api } from "encore.dev/api";
-import { getAuthData } from "~encore/auth";
 import { campaignsDB } from "./db";
 
 export interface CampaignStatsRequest {
@@ -19,9 +18,10 @@ export interface CampaignStats {
 
 // Gets statistics for a specific campaign.
 export const getStats = api<CampaignStatsRequest, CampaignStats>(
-  { auth: true, expose: true, method: "GET", path: "/campaigns/:campaignId/stats" },
+  { auth: false, expose: true, method: "GET", path: "/campaigns/:campaignId/stats" },
   async (req) => {
-    const auth = getAuthData()!;
+    // For development, use a default user ID
+    const userId = "dev-user-1";
 
     // Get campaign basic stats
     const campaign = await campaignsDB.queryRow<{
@@ -31,7 +31,7 @@ export const getStats = api<CampaignStatsRequest, CampaignStats>(
     }>`
       SELECT total_recipients, sent_count, failed_count
       FROM campaigns 
-      WHERE id = ${req.campaignId} AND user_id = ${auth.userID}
+      WHERE id = ${req.campaignId} AND user_id = ${userId}
     `;
 
     if (!campaign) {

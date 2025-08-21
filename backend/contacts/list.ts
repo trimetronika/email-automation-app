@@ -1,6 +1,5 @@
 import { api } from "encore.dev/api";
 import { Query } from "encore.dev/api";
-import { getAuthData } from "~encore/auth";
 import { contactsDB } from "./db";
 import type { Contact } from "./create";
 
@@ -18,14 +17,15 @@ export interface ListContactsResponse {
 
 // Lists contacts with optional search and filtering.
 export const list = api<ListContactsRequest, ListContactsResponse>(
-  { auth: true, expose: true, method: "GET", path: "/contacts" },
+  { auth: false, expose: true, method: "GET", path: "/contacts" },
   async (req) => {
-    const auth = getAuthData()!;
+    // For development, use a default user ID
+    const userId = "dev-user-1";
     const limit = req.limit || 50;
     const offset = req.offset || 0;
 
     let whereClause = "WHERE user_id = $1";
-    let params: any[] = [auth.userID];
+    let params: any[] = [userId];
     let paramIndex = 2;
 
     if (req.search) {

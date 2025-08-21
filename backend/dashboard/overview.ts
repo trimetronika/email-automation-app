@@ -1,5 +1,4 @@
 import { api } from "encore.dev/api";
-import { getAuthData } from "~encore/auth";
 import { campaignsDB } from "../campaigns/db";
 import { contactsDB } from "../contacts/db";
 import { templatesDB } from "../templates/db";
@@ -22,21 +21,22 @@ export interface DashboardOverview {
 
 // Gets dashboard overview statistics.
 export const getOverview = api<void, DashboardOverview>(
-  { auth: true, expose: true, method: "GET", path: "/dashboard/overview" },
+  { auth: false, expose: true, method: "GET", path: "/dashboard/overview" },
   async () => {
-    const auth = getAuthData()!;
+    // For development, use a default user ID
+    const userId = "dev-user-1";
 
     // Get total counts
     const contactCount = await contactsDB.queryRow<{ count: number }>`
-      SELECT COUNT(*) as count FROM contacts WHERE user_id = ${auth.userID}
+      SELECT COUNT(*) as count FROM contacts WHERE user_id = ${userId}
     `;
 
     const templateCount = await templatesDB.queryRow<{ count: number }>`
-      SELECT COUNT(*) as count FROM email_templates WHERE user_id = ${auth.userID} AND is_active = true
+      SELECT COUNT(*) as count FROM email_templates WHERE user_id = ${userId} AND is_active = true
     `;
 
     const campaignCount = await campaignsDB.queryRow<{ count: number }>`
-      SELECT COUNT(*) as count FROM campaigns WHERE user_id = ${auth.userID}
+      SELECT COUNT(*) as count FROM campaigns WHERE user_id = ${userId}
     `;
 
     // Get recent campaigns
@@ -50,7 +50,7 @@ export const getOverview = api<void, DashboardOverview>(
     }>`
       SELECT id, name, status, sent_count, total_recipients, created_at
       FROM campaigns 
-      WHERE user_id = ${auth.userID}
+      WHERE user_id = ${userId}
       ORDER BY created_at DESC
       LIMIT 5
     `;
@@ -62,7 +62,7 @@ export const getOverview = api<void, DashboardOverview>(
     const emailsToday = await campaignsDB.queryRow<{ total: number }>`
       SELECT COALESCE(SUM(sent_count), 0) as total
       FROM campaigns 
-      WHERE user_id = ${auth.userID} AND completed_at >= ${today}
+      WHERE user_id = ${userId} AND completed_at >= ${today}
     `;
 
     // Get emails sent this month
@@ -71,7 +71,7 @@ export const getOverview = api<void, DashboardOverview>(
     const emailsThisMonth = await campaignsDB.queryRow<{ total: number }>`
       SELECT COALESCE(SUM(sent_count), 0) as total
       FROM campaigns 
-      WHERE user_id = ${auth.userID} AND completed_at >= ${monthStart}
+      WHERE user_id = ${userId} AND completed_at >= ${monthStart}
     `;
 
     return {

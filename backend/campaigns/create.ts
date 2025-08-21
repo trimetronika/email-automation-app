@@ -1,5 +1,4 @@
 import { api, APIError } from "encore.dev/api";
-import { getAuthData } from "~encore/auth";
 import { campaignsDB } from "./db";
 import { contactsDB } from "../contacts/db";
 
@@ -26,14 +25,15 @@ export interface Campaign {
 
 // Creates a new email campaign.
 export const create = api<CreateCampaignRequest, Campaign>(
-  { auth: true, expose: true, method: "POST", path: "/campaigns" },
+  { auth: false, expose: true, method: "POST", path: "/campaigns" },
   async (req) => {
-    const auth = getAuthData()!;
+    // For development, use a default user ID
+    const userId = "dev-user-1";
 
     // Validate contacts belong to user
     const validContacts = await contactsDB.queryAll<{ id: number; email: string }>`
       SELECT id, email FROM contacts 
-      WHERE id = ANY(${req.contactIds}) AND user_id = ${auth.userID}
+      WHERE id = ANY(${req.contactIds}) AND user_id = ${userId}
     `;
 
     if (validContacts.length !== req.contactIds.length) {
@@ -47,7 +47,7 @@ export const create = api<CreateCampaignRequest, Campaign>(
       // Create campaign
       const campaign = await tx.queryRow<Campaign>`
         INSERT INTO campaigns (name, template_id, user_id, scheduled_at, total_recipients, status)
-        VALUES (${req.name}, ${req.templateId}, ${auth.userID}, ${req.scheduledAt}, ${validContacts.length}, 
+        VALUES (${req.name}, ${req.templateId}, ${userId}, ${req.scheduledAt || null}, ${validContacts.length}, 
                 ${req.scheduledAt ? 'scheduled' : 'draft'})
         RETURNING id, name, template_id as "templateId", user_id as "userId", status, scheduled_at as "scheduledAt",
                   total_recipients as "totalRecipients", sent_count as "sentCount", failed_count as "failedCount",

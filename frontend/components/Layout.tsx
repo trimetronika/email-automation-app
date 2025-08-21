@@ -7,12 +7,13 @@ import {
   FileText, 
   Send,
   Mail,
-  User
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface LayoutProps {
   children: ReactNode;
+  onLogout: () => void;
 }
 
 const navigation = [
@@ -22,8 +23,14 @@ const navigation = [
   { name: "Campaigns", href: "/campaigns", icon: Send },
 ];
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, onLogout }: LayoutProps) {
   const location = useLocation();
+
+  const handleLogout = () => {
+    // Clear session cookie
+    document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    onLogout();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -66,9 +73,14 @@ export default function Layout({ children }: LayoutProps) {
         {/* Top bar */}
         <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
           <div className="flex-1" />
-          <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-            <User className="h-4 w-4" />
-            <span>Profile</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleLogout}
+            className="flex items-center space-x-2"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
           </Button>
         </div>
 
